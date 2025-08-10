@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Approach It! Motion Simulator — Limits</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.js"></script>
+<style>
+  :root{
+    --bg:#0b0f19;
+    --panel:#121829;
+    --panel-2:#0f1526;
+    --text:#e8ecff;
+    --muted:#9aa3b2;
+    --accent:#7aa2ff;
+    --accent-2:#8ef0d4;
+    --danger:#ff7a7a;
+    --grid:#25304a;
+    --axis:#9fb2ff;
+    --card:#0d1326;
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+     radial-gradient(1200px 600px at 100% -10%, #1b2747 0%, transparent 60%),
+     radial-gradient(1000px 700px at -10% 110%, #1a2b4d 0%, transparent 65%),
+     var(--bg);
+    color:var(--text);
+    font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    display:flex; flex-direction:column;
+  }
+  header{
+    padding:16px 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .brand{
+    font-weight:800; letter-spacing:.5px; font-size:18px;
+    padding:8px 12px; border-radius:10px;
+    background:linear-gradient(135deg,#2a3c6a 0%, #1a2547 100%);
+    box-shadow:var(--shadow);
+  }
+  .controls{
+    background:linear-gradient(180deg, #121A34 0%, #0e142a 100%);
+    border:1px solid #233258;
+    border-radius:var(--radius);
+    padding:12px;
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+    gap:10px;
+    width:100%;
+  }
+  .control{
+    background:linear-gradient(180deg, #10172d 0%, #0c1226 100%);
+    border:1px solid #223056;
+    border-radius:12px; padding:10px 12px;
+  }
+  label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+  select,input[type="text"],input[type="number"]{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a3a63;
+    background:#0b1124; color:var(--text); outline:none;
+  }
+  input[type="range"]{width:100%}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .btn{
+    padding:10px 14px; border-radius:12px; border:1px solid #2a3a63;
+    background:#0b132a; color:var(--text); cursor:pointer;
+  }
+  .btn.primary{border-color:#3a57ff; background:linear-gradient(180deg,#1c2b6b,#162259)}
+  .btn.ghost{background:transparent}
+  .btn.success{border-color:#2c8b70; background:linear-gradient(180deg,#19463c,#143e35)}
+  .btn.warn{border-color:#7a2e2e; background:linear-gradient(180deg,#3a1717,#2e1313)}
+  main{display:grid; grid-template-columns: 1.2fr .8fr; gap:14px; padding:0 20px 18px}
+  @media (max-width:1100px){ main{grid-template-columns:1fr} }
+  .card{
+    background:linear-gradient(180deg, #0e152b 0%, #0b1123 100%);
+    border:1px solid #1f2b4a; border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .graph-wrap{position:relative; padding:12px}
+  canvas{width:100%; height:520px; border-radius:12px; display:block; background:#0a0f22}
+  .stats{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:12px}
+  .stat{
+    background:linear-gradient(180deg,#0f1832,#0c1328); border:1px solid #233058;
+    border-radius:12px; padding:10px
+  }
+  .k{font-size:12px; color:var(--muted)}
+  .v{font-weight:700; font-size:16px}
+  .side{padding:12px}
+  table{
+    width:100%; border-collapse:collapse; overflow:hidden; border-radius:12px;
+    border:1px solid #1f2b4a;
+  }
+  th,td{padding:10px 12px; border-bottom:1px solid #182242; font-variant-numeric:tabular-nums}
+  th{background:#0f1733; color:#cfd9ff; text-align:left}
+  tr:last-child td{border-bottom:none}
+  .muted{color:var(--muted)}
+  .toolbar{display:flex; gap:8px; padding:12px; flex-wrap:wrap}
+  .eps-wrap{display:flex; gap:10px; align-items:center}
+  .pill{padding:6px 10px; border-radius:999px; border:1px solid #263660; background:#0a1228}
+  /* Help Overlay */
+  .overlay{
+    position:fixed; inset:0; background:rgba(7,10,20,.72); backdrop-filter: blur(10px);
+    display:none; align-items:center; justify-content:center; z-index:50;
+  }
+  .overlay.show{display:flex}
+  .help{
+    width:min(920px,92vw); max-height:86vh; overflow:auto;
+    background:linear-gradient(180deg,#0f1733,#0b1228);
+    border:1px solid #2a3a63; border-radius:18px; box-shadow:0 30px 60px rgba(0,0,0,.45);
+    padding:18px;
+  }
+  .help h2{margin:0 0 8px 0}
+  .help .lead{color:#cfe0ff}
+  .tips{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; margin-top:12px
+  }
+  .tip{background:#0b132a;border:1px solid #223056;border-radius:12px;padding:12px}
+  .help-footer{display:flex; justify-content:space-between; align-items:center; margin-top:12px}
+  .checkbox{display:flex; gap:8px; align-items:center; color:var(--muted)}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">Approach It! • Limits Simulator</div>
+    <div class="controls card" style="flex:1">
+      <div class="control">
+        <label>Function</label>
+        <select id="preset">
+          <option value="x^2">x^2</option>
+          <option value="(x^2 - 1)/(x - 1)">(x^2 − 1)/(x − 1)  (hole at x=1)</option>
+          <option value="piecewise">Jump: { x < 0 → 1, x ≥ 0 → 2 }</option>
+          <option value="1/(x - 2)">1/(x − 2)  (vertical asymptote at x=2)</option>
+          <option value="sin(x)/x">sin(x)/x  (limit 1 at 0)</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <div id="customRow" style="display:none; margin-top:8px">
+          <input id="funcInput" type="text" placeholder="Enter f(x) using x, e.g., (x^2-1)/(x-1)"/>
+        </div>
+      </div>
+      <div class="control">
+        <label>Approach point a</label>
+        <input id="aInput" type="number" step="0.1" value="1"/>
+        <div class="row" style="margin-top:8px">
+          <label class="pill"><input type="radio" name="side" value="both" checked> Both</label>
+          <label class="pill"><input type="radio" name="side" value="left"> Left</label>
+          <label class="pill"><input type="radio" name="side" value="right"> Right</label>
+        </div>
+      </div>
+      <div class="control">
+        <label>Animation speed</label>
+        <input id="speed" type="range" min="0.2" max="3" value="1.2" step="0.1">
+        <label style="margin-top:10px">Zoom near a</label>
+        <input id="zoom" type="range" min="1" max="100" value="25">
+      </div>
+      <div class="control">
+        <label>Epsilon (ε band)</label>
+        <div class="row eps-wrap">
+          <input id="epsilon" type="range" min="0" max="2" value="0" step="0.01">
+          <div id="epsVal" class="pill">ε = 0.00</div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button id="playBtn" class="btn primary">▶ Play</button>
+          <button id="pauseBtn" class="btn">⏸ Pause</button>
+          <button id="tableBtn" class="btn ghost">Toggle table</button>
+          <button id="helpBtn" class="btn success">Help</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="graph-wrap">
+        <canvas id="graph" width="1200" height="520" title="Click to Play/Pause"></canvas>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">x</div><div class="v" id="statX">—</div></div>
+        <div class="stat"><div class="k">f(x)</div><div class="v" id="statY">—</div></div>
+        <div class="stat"><div class="k">a</div><div class="v" id="statA">—</div></div>
+        <div class="stat"><div class="k">Estimated limit near a</div><div class="v" id="statL">—</div></div>
+      </div>
+      <div class="toolbar">
+        <div class="muted">Tip: click the graph to play/pause • Use zoom to “microscope” near a</div>
+      </div>
+    </section>
+
+    <aside class="card side">
+      <div class="row" style="justify-content:space-between; align-items:center">
+        <h3 style="margin:0">Approach Table</h3>
+        <div class="muted" id="tableHint">Hidden</div>
+      </div>
+      <div id="tableWrap" style="margin-top:10px; display:none">
+        <table>
+          <thead>
+            <tr><th>Side</th><th>x</th><th>f(x)</th></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px">
+        <div class="muted">Notes</div>
+        <ul class="muted">
+          <li>Limits depend on the value as x approaches a, not necessarily the value at a.</li>
+          <li>For jumps, left- and right-hand limits differ, so the two-sided limit doesn’t exist.</li>
+          <li>For a hole, the limit can exist even if f(a) is undefined.</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Help Overlay -->
+  <div id="overlay" class="overlay">
+    <div class="help">
+      <h2>How to Play: Approach It! Motion Simulator</h2>
+      <div class="lead">Make a point approach <strong>a</strong> on different functions to “see” limits. Try these steps.</div>
+      <div class="tips">
+        <div class="tip">
+          <strong>1) Choose a function</strong>
+          <p>Pick a preset or use <em>Custom…</em> and type an expression with <code>x</code>. Examples: <code>(x^2-1)/(x-1)</code>, <code>sin(x)/x</code>.</p>
+        </div>
+        <div class="tip">
+          <strong>2) Set the approach point a</strong>
+          <p>Enter the x-value you want to approach. The dot will move toward this point.</p>
+        </div>
+        <div class="tip">
+          <strong>3) Pick an approach side</strong>
+          <p>Choose Both, Left, or Right to explore one-sided vs two-sided limits.</p>
+        </div>
+        <div class="tip">
+          <strong>4) Press Play</strong>
+          <p>Watch the dot move. Adjust animation speed and use the zoom slider to “microscope” near a.</p>
+        </div>
+        <div class="tip">
+          <strong>5) Show the table</strong>
+          <p>Toggle the table to see numeric values approaching from each side.</p>
+        </div>
+        <div class="tip">
+          <strong>6) Explore ε bands</strong>
+          <p>Set ε &gt; 0 to show a horizontal band around the estimated limit. Can you keep f(x) within that band by zooming near a?</p>
+        </div>
+        <div class="tip">
+          <strong>Teacher quick wins</strong>
+          <ul style="margin:6px 0 0 16px">
+            <li>Hole: use <code>(x^2-1)/(x-1)</code> at a=1.</li>
+            <li>Jump: use the jump preset at a=0.</li>
+            <li>Asymptote: use <code>1/(x-2)</code> at a=2.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="help-footer">
+        <label class="checkbox"><input type="checkbox" id="dontShow"> Don’t show this again</label>
+        <div class="row">
+          <button id="closeHelp" class="btn">Close</button>
+          <button id="startPlay" class="btn primary">Start & Play ▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ====================== Utilities ====================== */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+const fmt = (n)=> (Number.isFinite(n) ? Number(n).toFixed(6) : '—');
+
+function parseFunc(expr){
+  try{
+    const node = math.parse(expr);
+    const code = node.compile();
+    return x => {
+      try{
+        const v = code.evaluate({x});
+        if (!Number.isFinite(v)) return NaN;
+        return v;
+      }catch{ return NaN; }
+    };
+  }catch{ return ()=>NaN; }
+}
+
+/* ====================== State ====================== */
+let fExpr = "x^2";
+let f = parseFunc(fExpr);
+let a = 1;
+let side = "both"; // both | left | right
+let speed = 1.2;   // multiplier
+let zoom = 25;     // 1..100
+let epsilon = 0;
+
+let running = false;
+let t = 0;
+let xPos = 3;      // current particle x
+let dir = -1;      // direction toward a
+let lastFrame = 0;
+
+const canvas = $("#graph");
+const ctx = canvas.getContext("2d");
+
+/* ====================== World/Viewport ====================== */
+function getWindow(){
+  // View window centered near a; zoom controls width (smaller width = more zoom)
+  const baseWidth = 20;         // world units
+  const w = baseWidth * (1 - zoom/110); // shrink with zoom
+  const width = clamp(w, 0.3, baseWidth);
+  const xMin = a - width/2;
+  const xMax = a + width/2;
+
+  // Sample f near a to guess y-range
+  const samples = [];
+  for(let i=0;i<200;i++){
+    const x = xMin + i*(xMax-xMin)/199;
+    const y = f(x);
+    if (Number.isFinite(y) && Math.abs(y) < 1e6) samples.push(y);
+  }
+  let yMin = -5, yMax = 5;
+  if (samples.length){
+    const smin = Math.min(...samples), smax = Math.max(...samples);
+    const pad = 0.15*(smax - smin || 1);
+    yMin = smin - pad; yMax = smax + pad;
+    // keep reasonable bounds
+    yMin = clamp(yMin, -20, 20);
+    yMax = clamp(yMax, -20, 20);
+    if (yMax - yMin < 1) { yMin -= .5; yMax += .5; }
+  }
+  return {xMin,xMax,yMin,yMax};
+}
+
+function toScreen(x,y,win){
+  const {xMin,xMax,yMin,yMax} = win;
+  const W = canvas.width, H = canvas.height;
+  const sx = (x - xMin)/(xMax - xMin) * W;
+  const sy = H - (y - yMin)/(yMax - yMin) * H;
+  return {x:sx,y:sy};
+}
+
+/* ====================== Drawing ====================== */
+function clear(){
+  ctx.fillStyle = "#0a0f22";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+function drawGrid(win){
+  const {xMin,xMax,yMin,yMax} = win;
+  ctx.lineWidth = 1;
+
+  // grid
+  ctx.strokeStyle = "#25304a";
+  ctx.beginPath();
+  const xStep = niceStep((xMax-xMin)/10);
+  for(let x = Math.ceil(xMin/xStep)*xStep; x<=xMax; x+=xStep){
+    const p = toScreen(x,0,win);
+    ctx.moveTo(p.x,0); ctx.lineTo(p.x,canvas.height);
+  }
+  const yStep = niceStep((yMax-yMin)/10);
+  for(let y = Math.ceil(yMin/yStep)*yStep; y<=yMax; y+=yStep){
+    const p = toScreen(0,y,win);
+    ctx.moveTo(0,p.y); ctx.lineTo(canvas.width,p.y);
+  }
+  ctx.stroke();
+
+  // axes
+  ctx.strokeStyle = "#9fb2ff";
+  ctx.beginPath();
+  if (yMin<0 && yMax>0){
+    const p = toScreen(0,0,win);
+    ctx.moveTo(0,p.y); ctx.lineTo(canvas.width,p.y);
+  }
+  if (xMin<0 && xMax>0){
+    const p = toScreen(0,0,win);
+    ctx.moveTo(p.x,0); ctx.lineTo(p.x,canvas.height);
+  }
+  ctx.stroke();
+
+  // tick labels
+  ctx.fillStyle = "#aab6ef";
+  ctx.font = "12px Inter, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for(let x = Math.ceil(xMin/xStep)*xStep; x<=xMax; x+=xStep){
+    const p = toScreen(x,0,win); 
+    ctx.fillText(trimZeros(x), p.x, 4);
+  }
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for(let y = Math.ceil(yMin/yStep)*yStep; y<=yMax; y+=yStep){
+    const p = toScreen(0,y,win);
+    ctx.fillText(trimZeros(y), canvas.width-4, p.y);
+  }
+}
+
+function niceStep(raw){
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw/p;
+  if (n<1.5) return 1*p;
+  if (n<3) return 2*p;
+  if (n<7) return 5*p;
+  return 10*p;
+}
+function trimZeros(n){
+  const s = (Math.abs(n) < 1e-6 ? 0 : n).toPrecision(6);
+  return parseFloat(s).toString();
+}
+
+function drawFunction(win){
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#7aa2ff";
+  ctx.beginPath();
+  const N=1000;
+  let moved=false;
+  const {xMin,xMax} = win;
+  for(let i=0;i<=N;i++){
+    const x = xMin + i*(xMax-xMin)/N;
+    const y = f(x);
+    if (!Number.isFinite(y) || Math.abs(y)>1e6){
+      moved=false; continue;
+    }
+    const p = toScreen(x,y,win);
+    if (!moved){ ctx.moveTo(p.x,p.y); moved=true; }
+    else ctx.lineTo(p.x,p.y);
+  }
+  ctx.stroke();
+
+  // hole marker if f(a) undefined but limit finite (we'll just show open circle at estimated L)
+  const L = estimateLimit(a);
+  const fa = f(a);
+  if (!Number.isFinite(fa) && Number.isFinite(L)){
+    const p = toScreen(a, L, win);
+    ctx.fillStyle = "#0a0f22";
+    ctx.strokeStyle = "#ffcf7a";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(p.x,p.y,6,0,Math.PI*2); ctx.stroke();
+  }
+}
+
+function drawEpsilonBand(win, L){
+  if (!Number.isFinite(L) || epsilon<=0) return;
+  const top = L + epsilon;
+  const bot = L - epsilon;
+
+  ctx.fillStyle = "rgba(142, 240, 212, 0.12)";
+  const p1 = toScreen(0,top,win);
+  const p2 = toScreen(0,bot,win);
+  ctx.fillRect(0, p1.y, canvas.width, p2.y - p1.y);
+
+  ctx.strokeStyle = "#8ef0d4";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0,p1.y); ctx.lineTo(canvas.width,p1.y);
+  ctx.moveTo(0,p2.y); ctx.lineTo(canvas.width,p2.y);
+  ctx.stroke();
+}
+
+function drawApproachPoint(win){
+  // vertical marker at a
+  const ap = toScreen(a, 0, win);
+  ctx.strokeStyle = "#ffd37a";
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.moveTo(ap.x,0); ctx.lineTo(ap.x,canvas.height); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawParticle(win){
+  const y = f(xPos);
+  if (!Number.isFinite(y)) return;
+  const p = toScreen(xPos, y, win);
+
+  ctx.shadowColor = "#7aa2ff";
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = "#7aa2ff";
+  ctx.beginPath(); ctx.arc(p.x,p.y,6,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+/* ====================== Animation & Logic ====================== */
+function step(dt){
+  // move xPos toward a with geometric easing
+  const delta = (a - xPos);
+  const base = 0.92 - (speed-1.2)*0.08; // speed affects shrink rate
+  const factor = clamp(base, 0.80, 0.98);
+  xPos = a - delta * factor;
+
+  // if both sides, bounce across a each time we get very close
+  if (side === "both"){
+    if (Math.abs(xPos - a) < 1e-4){
+      // flip start side
+      const offset = (getWindow().xMax - getWindow().xMin)*0.35;
+      dir *= -1;
+      xPos = a + dir*offset;
+    }
+  }
+
+  // one-sided starts reset if we get too close
+  if (side === "left" || side === "right"){
+    if (Math.abs(xPos - a) < 1e-4){
+      const offset = (getWindow().xMax - getWindow().xMin)*0.35;
+      xPos = a + (side==="left" ? -Math.abs(offset) : Math.abs(offset));
+    }
+  }
+}
+
+function render(){
+  const win = getWindow();
+  clear();
+  drawGrid(win);
+  drawFunction(win);
+  drawApproachPoint(win);
+
+  const L = estimateLimit(a);
+  drawEpsilonBand(win, L);
+  drawParticle(win);
+
+  // stats
+  $("#statA").textContent = trimZeros(a);
+  const y = f(xPos);
+  $("#statX").textContent = fmt(xPos);
+  $("#statY").textContent = fmt(y);
+  $("#statL").textContent = Number.isFinite(L)? fmt(L) : "—";
+}
+
+function loop(ts){
+  const dt = (ts - lastFrame) / 1000;
+  lastFrame = ts;
+  if (running) step(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ====================== Limit Estimation ====================== */
+function estimateLimit(at){
+  // average of nearby left/right medians
+  const dx0 = (getWindow().xMax - getWindow().xMin)*0.001;
+  const xsLeft = [], xsRight = [];
+  for(let i=6;i<=50;i++){
+    xsLeft.push(at - dx0*i);
+    xsRight.push(at + dx0*i);
+  }
+  const lvals = xsLeft.map(x=>f(x)).filter(Number.isFinite);
+  const rvals = xsRight.map(x=>f(x)).filter(Number.isFinite);
+  if (!lvals.length || !rvals.length) return NaN;
+  const lMed = median(lvals), rMed = median(rvals);
+  if (!Number.isFinite(lMed) || !Number.isFinite(rMed)) return NaN;
+  // if they disagree wildly, show NaN (jump/asymptote)
+  if (Math.abs(lMed - rMed) > 1e3 || (Math.abs(lMed - rMed) > Math.max(1,Math.abs(lMed),Math.abs(rMed))*0.25))
+    return (side==="left")? lMed : (side==="right"? rMed : NaN);
+  return (lMed + rMed)/2;
+}
+function median(arr){
+  const a=[...arr].sort((a,b)=>a-b);
+  const n=a.length; if (!n) return NaN;
+  return n%2? a[(n-1)/2] : (a[n/2-1]+a[n/2])/2;
+}
+
+/* ====================== Table ====================== */
+function rebuildTable(){
+  const body = $("#tableBody");
+  body.innerHTML = "";
+  const win = getWindow();
+  const dx0 = (win.xMax - win.xMin)*0.4;
+  const xsL = [a - dx0, a - dx0*0.5, a - dx0*0.25, a - dx0*0.1, a - dx0*0.05, a - dx0*0.01];
+  const xsR = [a + dx0*0.01, a + dx0*0.05, a + dx0*0.1, a + dx0*0.25, a + dx0*0.5, a + dx0];
+
+  if (side!=="right"){
+    xsL.forEach(x=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td class="muted">Left</td><td>${fmt(x)}</td><td>${fmt(f(x))}</td>`;
+      body.appendChild(tr);
+    });
+  }
+  if (side!=="left"){
+    xsR.forEach(x=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td class="muted">Right</td><td>${fmt(x)}</td><td>${fmt(f(x))}</td>`;
+      body.appendChild(tr);
+    });
+  }
+}
+
+/* ====================== Events ====================== */
+function setPreset(expr){
+  if (expr === "piecewise"){
+    f = x => (x < 0 ? 1 : 2);
+    fExpr = "piecewise";
+    $("#customRow").style.display = "none";
+    return;
+  }
+  if (expr === "custom"){
+    $("#customRow").style.display = "";
+    const user = $("#funcInput").value.trim();
+    if (user){
+      fExpr = user; f = parseFunc(user);
+    }
+    return;
+  }
+  $("#customRow").style.display = "none";
+  fExpr = expr; f = parseFunc(expr);
+}
+
+$("#preset").addEventListener("change", e=>{
+  setPreset(e.target.value);
+  if (e.target.value === "(x^2 - 1)/(x - 1)") a = 1;
+  if (e.target.value === "1/(x - 2)") a = 2;
+  if (e.target.value === "sin(x)/x") a = 0;
+  $("#aInput").value = a;
+  resetMotion();
+  if ($("#tableWrap").style.display !== "none") rebuildTable();
+});
+
+$("#funcInput").addEventListener("change", ()=>{
+  const user = $("#funcInput").value.trim();
+  if (user){
+    fExpr = user; f = parseFunc(user);
+    resetMotion();
+    if ($("#tableWrap").style.display !== "none") rebuildTable();
+  }
+});
+
+$("#aInput").addEventListener("change", e=>{
+  a = parseFloat(e.target.value) || 0;
+  resetMotion();
+  if ($("#tableWrap").style.display !== "none") rebuildTable();
+});
+
+$$("input[name='side']").forEach(r=>{
+  r.addEventListener("change", e=>{
+    side = e.target.value;
+    resetMotion();
+    if ($("#tableWrap").style.display !== "none") rebuildTable();
+  });
+});
+
+$("#speed").addEventListener("input", e=>{ speed = parseFloat(e.target.value) });
+$("#zoom").addEventListener("input", e=>{
+  zoom = parseFloat(e.target.value);
+  if ($("#tableWrap").style.display !== "none") rebuildTable();
+});
+$("#epsilon").addEventListener("input", e=>{
+  epsilon = parseFloat(e.target.value);
+  $("#epsVal").textContent = `ε = ${epsilon.toFixed(2)}`;
+});
+
+$("#playBtn").addEventListener("click", ()=> running = true);
+$("#pauseBtn").addEventListener("click", ()=> running = false);
+$("#tableBtn").addEventListener("click", ()=>{
+  const wrap = $("#tableWrap");
+  const show = wrap.style.display === "none";
+  wrap.style.display = show ? "" : "none";
+  $("#tableHint").textContent = show ? "Visible" : "Hidden";
+  if (show) rebuildTable();
+});
+$("#helpBtn").addEventListener("click", ()=> showHelp(true));
+canvas.addEventListener("click", ()=> running = !running);
+
+/* ====================== Help Overlay ====================== */
+const OVERLAY_KEY = "approachIt_help_hidden";
+function showHelp(openByUser=false){
+  $("#overlay").classList.add("show");
+  document.body.style.overflow = "hidden";
+  // If user opened Help explicitly, uncheck "Don't show again" so they can choose again
+  if (openByUser) $("#dontShow").checked = false;
+}
+function hideHelp(){
+  $("#overlay").classList.remove("show");
+  document.body.style.overflow = "";
+  if ($("#dontShow").checked){
+    localStorage.setItem(OVERLAY_KEY, "1");
+  }
+}
+$("#closeHelp").addEventListener("click", hideHelp);
+$("#startPlay").addEventListener("click", ()=>{
+  hideHelp();
+  running = true;
+});
+window.addEventListener("load", ()=>{
+  if (!localStorage.getItem(OVERLAY_KEY)){
+    showHelp(false);
+  }
+});
+
+/* ====================== Init & Helpers ====================== */
+function resetMotion(){
+  const range = getWindow().xMax - getWindow().xMin;
+  if (side==="left"){ xPos = a - range*0.35; dir = -1; }
+  else if (side==="right"){ xPos = a + range*0.35; dir = 1; }
+  else { dir = -1; xPos = a + range*0.35; }
+}
+
+function initialFromPreset(){
+  const p = $("#preset").value;
+  if (p === "(x^2 - 1)/(x - 1)") a=1;
+  if (p === "1/(x - 2)") a=2;
+  if (p === "sin(x)/x") a=0;
+  $("#aInput").value = a;
+  resetMotion();
+}
+
+(function main(){
+  setPreset($("#preset").value);
+  initialFromPreset();
+  render();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
