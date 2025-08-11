@@ -51,8 +51,7 @@
     padding:12px;
     display:grid;
     grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
-    gap:10px;
-    width:100%;
+    gap:10px; width:100%;
   }
   .control{
     background:linear-gradient(180deg, #10172d 0%, #0c1226 100%);
@@ -83,10 +82,7 @@
   .graph-wrap{position:relative; padding:12px}
   canvas{width:100%; height:520px; border-radius:12px; display:block; background:#0a0f22}
   .stats{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:12px}
-  .stat{
-    background:linear-gradient(180deg,#0f1832,#0c1328); border:1px solid #233058;
-    border-radius:12px; padding:10px
-  }
+  .stat{background:linear-gradient(180deg,#0f1832,#0c1328); border:1px solid #233058;border-radius:12px; padding:10px}
   .k{font-size:12px; color:var(--muted)}
   .v{font-weight:700; font-size:16px}
   .side{padding:12px}
@@ -101,43 +97,28 @@
   .toolbar{display:flex; gap:8px; padding:12px; flex-wrap:wrap}
   .eps-wrap{display:flex; gap:10px; align-items:center}
   .pill{padding:6px 10px; border-radius:999px; border:1px solid #263660; background:#0a1228}
+
   /* Help Overlay */
-  .overlay{
-    position:fixed; inset:0; background:rgba(7,10,20,.72); backdrop-filter: blur(10px);
-    display:none; align-items:center; justify-content:center; z-index:50;
-  }
+  .overlay{position:fixed; inset:0; background:rgba(7,10,20,.72); backdrop-filter: blur(10px); display:none; align-items:center; justify-content:center; z-index:50;}
   .overlay.show{display:flex}
-  .help{
-    width:min(920px,92vw); max-height:86vh; overflow:auto;
-    background:linear-gradient(180deg,#0f1733,#0b1228);
-    border:1px solid #2a3a63; border-radius:18px; box-shadow:0 30px 60px rgba(0,0,0,.45);
-    padding:18px;
-  }
+  .help{width:min(920px,92vw); max-height:86vh; overflow:auto; background:linear-gradient(180deg,#0f1733,#0b1228); border:1px solid #2a3a63; border-radius:18px; box-shadow:0 30px 60px rgba(0,0,0,.45); padding:18px;}
   .help h2{margin:0 0 8px 0}
   .help .lead{color:#cfe0ff}
-  .tips{
-    display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; margin-top:12px
-  }
+  .tips{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; margin-top:12px}
   .tip{background:#0b132a;border:1px solid #223056;border-radius:12px;padding:12px}
   .help-footer{display:flex; justify-content:space-between; align-items:center; margin-top:12px}
   .checkbox{display:flex; gap:8px; align-items:center; color:var(--muted)}
 
-  /* Continuity panel */
-  .cont-panel{
-    padding:12px;
-    display:grid;
-    grid-template-columns: 1fr;
-    gap:10px;
-    border-top:1px solid #1f2b4a;
-  }
-  .badge{
-    display:inline-block; padding:6px 10px; border-radius:999px;
-    font-size:12px; font-weight:700; letter-spacing:.3px;
-  }
+  /* Continuity panel and badges */
+  .cont-panel{padding:12px; display:grid; grid-template-columns: 1fr; gap:10px; border-top:1px solid #1f2b4a;}
+  .badge{display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.3px;}
   .ok{background:#11361f; border:1px solid #2f8f5a; color:#b8ffd9}
   .warn{background:#3a1717; border:1px solid #7a2e2e; color:#ffd0d0}
   .info{background:#0f1936; border:1px solid #2f59a8; color:#d6e3ff}
   .listish{margin:0; padding-left:18px}
+
+  /* Floating badge on graph */
+  .floatbadge{position:absolute; top:14px; left:14px;}
 </style>
 </head>
 <body>
@@ -193,6 +174,7 @@
     <section class="card">
       <div class="graph-wrap">
         <canvas id="graph" width="1200" height="520" title="Click to Play/Pause"></canvas>
+        <div id="graphBadge" class="badge info floatbadge">Analyzing continuity…</div>
       </div>
       <div class="stats">
         <div class="stat"><div class="k">x</div><div class="v" id="statX">—</div></div>
@@ -204,7 +186,7 @@
       <!-- Continuity panel -->
       <div class="cont-panel">
         <div id="contBadge" class="badge info">Analyzing continuity…</div>
-        <div id="contDetails" class="muted">Left limit, right limit, two sided, and f(a) will appear here.</div>
+        <div id="contDetails" class="muted">Left limit, right limit, two sided limit, and f(a) will appear here.</div>
         <div class="muted">Nearby discontinuities in view:</div>
         <ul id="contList" class="listish muted"></ul>
         <div class="row">
@@ -315,15 +297,14 @@ function parseFunc(expr){
 let fExpr = "x^2";
 let f = parseFunc(fExpr);
 let a = 1;
-let side = "both"; // both | left | right
-let speed = 1.2;   // multiplier
-let zoom = 25;     // 1..100
+let side = "both";
+let speed = 1.2;
+let zoom = 25;
 let epsilon = 0;
 
 let running = false;
-let t = 0;
-let xPos = 3;      // current particle x
-let dir = -1;      // direction toward a
+let xPos = 3;
+let dir = -1;
 let lastFrame = 0;
 
 const canvas = $("#graph");
@@ -364,10 +345,7 @@ function toScreen(x,y,win){
 }
 
 /* ====================== Drawing ====================== */
-function clear(){
-  ctx.fillStyle = "#0a0f22";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-}
+function clear(){ ctx.fillStyle = "#0a0f22"; ctx.fillRect(0,0,canvas.width,canvas.height); }
 
 function drawGrid(win){
   const {xMin,xMax,yMin,yMax} = win;
@@ -402,29 +380,22 @@ function drawGrid(win){
   ctx.fillStyle = "#aab6ef";
   ctx.font = "12px Inter, sans-serif";
   ctx.textAlign = "center"; ctx.textBaseline = "top";
-  for(let x = Math.ceil(xMin/xStep)*xStep; x<=xMax; x+=xStep){
-    const p = toScreen(x,0,win); 
-    ctx.fillText(trimZeros(x), p.x, 4);
+  const xStep2 = xStep;
+  for(let x = Math.ceil(xMin/xStep2)*xStep2; x<=xMax; x+=xStep2){
+    const p = toScreen(x,0,win); ctx.fillText(trimZeros(x), p.x, 4);
   }
   ctx.textAlign = "right"; ctx.textBaseline = "middle";
-  for(let y = Math.ceil(yMin/yStep)*yStep; y<=yMax; y+=yStep){
-    const p = toScreen(0,y,win);
-    ctx.fillText(trimZeros(y), canvas.width-4, p.y);
+  const yStep2 = yStep;
+  for(let y = Math.ceil(yMin/yStep2)*yStep2; y<=yMax; y+=yStep2){
+    const p = toScreen(0,y,win); ctx.fillText(trimZeros(y), canvas.width-4, p.y);
   }
 }
-
 function niceStep(raw){
   const p = Math.pow(10, Math.floor(Math.log10(raw)));
   const n = raw/p;
-  if (n<1.5) return 1*p;
-  if (n<3) return 2*p;
-  if (n<7) return 5*p;
-  return 10*p;
+  if (n<1.5) return 1*p; if (n<3) return 2*p; if (n<7) return 5*p; return 10*p;
 }
-function trimZeros(n){
-  const s = (Math.abs(n) < 1e-6 ? 0 : n).toPrecision(6);
-  return parseFloat(s).toString();
-}
+function trimZeros(n){ const s = (Math.abs(n) < 1e-6 ? 0 : n).toPrecision(6); return parseFloat(s).toString(); }
 
 function drawFunction(win){
   ctx.lineWidth = 2;
@@ -436,9 +407,7 @@ function drawFunction(win){
   for(let i=0;i<=N;i++){
     const x = xMin + i*(xMax-xMin)/N;
     const y = f(x);
-    if (!Number.isFinite(y) || Math.abs(y)>1e6){
-      moved=false; continue;
-    }
+    if (!Number.isFinite(y) || Math.abs(y)>1e6){ moved=false; continue; }
     const p = toScreen(x,y,win);
     if (!moved){ ctx.moveTo(p.x,p.y); moved=true; }
     else ctx.lineTo(p.x,p.y);
@@ -458,26 +427,24 @@ function drawFunction(win){
 
 function drawEpsilonBand(win, L){
   if (!Number.isFinite(L) || epsilon<=0) return;
-  const top = L + epsilon;
-  const bot = L - epsilon;
-
+  const top = L + epsilon, bot = L - epsilon;
   ctx.fillStyle = "rgba(142, 240, 212, 0.12)";
-  const p1 = toScreen(0,top,win);
-  const p2 = toScreen(0,bot,win);
+  const p1 = toScreen(0,top,win), p2 = toScreen(0,bot,win);
   ctx.fillRect(0, p1.y, canvas.width, p2.y - p1.y);
-
-  ctx.strokeStyle = "#8ef0d4";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(0,p1.y); ctx.lineTo(canvas.width,p1.y);
-  ctx.moveTo(0,p2.y); ctx.lineTo(canvas.width,p2.y);
-  ctx.stroke();
+  ctx.strokeStyle = "#8ef0d4"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0,p1.y); ctx.lineTo(canvas.width,p1.y);
+  ctx.moveTo(0,p2.y); ctx.lineTo(canvas.width,p2.y); ctx.stroke();
 }
 
-function drawApproachPoint(win){
+function drawApproachPoint(win, type){
   const ap = toScreen(a, 0, win);
-  ctx.strokeStyle = "#ffd37a";
-  ctx.lineWidth = 1.5;
+  const color =
+    type==="continuous" ? "#2f8f5a" :
+    type==="removable"  ? "#ffcf7a" :
+    type==="jump"       ? "#ff7a7a" :
+    type==="infinite"   ? "#ff7a7a" : "#ffd37a";
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.8;
   ctx.setLineDash([6,6]);
   ctx.beginPath(); ctx.moveTo(ap.x,0); ctx.lineTo(ap.x,canvas.height); ctx.stroke();
   ctx.setLineDash([]);
@@ -487,16 +454,14 @@ function drawParticle(win){
   const y = f(xPos);
   if (!Number.isFinite(y)) return;
   const p = toScreen(xPos, y, win);
-
-  ctx.shadowColor = "#7aa2ff";
-  ctx.shadowBlur = 12;
+  ctx.shadowColor = "#7aa2ff"; ctx.shadowBlur = 12;
   ctx.fillStyle = "#7aa2ff";
   ctx.beginPath(); ctx.arc(p.x,p.y,6,0,Math.PI*2); ctx.fill();
   ctx.shadowBlur = 0;
 }
 
 /* ====================== Animation & Logic ====================== */
-function step(dt){
+function step(){
   const delta = (a - xPos);
   const base = 0.92 - (speed-1.2)*0.08;
   const factor = clamp(base, 0.80, 0.98);
@@ -505,11 +470,9 @@ function step(dt){
   if (side === "both"){
     if (Math.abs(xPos - a) < 1e-4){
       const offset = (getWindow().xMax - getWindow().xMin)*0.35;
-      dir *= -1;
-      xPos = a + dir*offset;
+      dir *= -1; xPos = a + dir*offset;
     }
   }
-
   if (side === "left" || side === "right"){
     if (Math.abs(xPos - a) < 1e-4){
       const offset = (getWindow().xMax - getWindow().xMin)*0.35;
@@ -518,13 +481,18 @@ function step(dt){
   }
 }
 
+let lastType = "undetermined";
+
 function render(){
   const win = getWindow();
   clear();
   drawGrid(win);
   drawFunction(win);
-  drawApproachPoint(win);
 
+  const analysis = analyzeAtPoint(a);
+  lastType = analysis.type;
+
+  drawApproachPoint(win, lastType);
   const L = estimateLimit(a);
   drawEpsilonBand(win, L);
   drawParticle(win);
@@ -535,13 +503,12 @@ function render(){
   $("#statY").textContent = fmt(y);
   $("#statL").textContent = Number.isFinite(L)? fmt(L) : "—";
 
-  updateContinuityPanel(); // new
+  updateContinuityPanel(analysis);
+  updateGraphBadge(analysis);
 }
 
 function loop(ts){
-  const dt = (ts - lastFrame) / 1000;
-  lastFrame = ts;
-  if (running) step(dt);
+  if (running) step();
   render();
   requestAnimationFrame(loop);
 }
@@ -560,15 +527,28 @@ function approxEqual(u,v){
   return abs < 1e-4 || rel < 1e-3;
 }
 
-function oneSidedMedian(at, dirSign){
+function oneSidedSamples(at, dirSign){
   const dx0 = (getWindow().xMax - getWindow().xMin)*0.001;
   const xs = [];
-  for(let i=6;i<=60;i++){
-    xs.push(at + dirSign*dx0*i);
-  }
-  const vals = xs.map(x=>f(x)).filter(Number.isFinite);
+  for(let i=6;i<=80;i++) xs.push(at + dirSign*dx0*i);
+  return xs.map(x=>f(x));
+}
+function oneSidedMedian(at, dirSign){
+  const vals = oneSidedSamples(at, dirSign).filter(Number.isFinite);
   if (!vals.length) return NaN;
   return median(vals);
+}
+function sideBlowsUp(at, dirSign){
+  const vals = oneSidedSamples(at, dirSign);
+  let countLarge = 0, countBad = 0, maxAbs = 0;
+  for(const v of vals){
+    if (!Number.isFinite(v)) { countBad++; continue; }
+    const av = Math.abs(v);
+    maxAbs = Math.max(maxAbs, av);
+    if (av > 1e4) countLarge++;
+  }
+  const n = vals.length || 1;
+  return (countBad/n > 0.2) || (countLarge/n > 0.3) || (maxAbs > 1e6);
 }
 
 function estimateLimit(at){
@@ -585,10 +565,12 @@ function analyzeAtPoint(at){
   const Ltwo = (Number.isFinite(Lleft) && Number.isFinite(Lright) && approxEqual(Lleft, Lright)) ? (Lleft+Lright)/2 : NaN;
   const fa = f(at);
 
-  // Infinite discontinuity: one of the one sided medians is not finite while nearby values blow up
-  const infiniteLeft = !Number.isFinite(Lleft);
-  const infiniteRight = !Number.isFinite(Lright);
+  const infLeft = sideBlowsUp(at, -1);
+  const infRight = sideBlowsUp(at, +1);
 
+  if (infLeft || infRight){
+    return {type:"infinite", Lleft, Lright, Ltwo, fa};
+  }
   if (Number.isFinite(Ltwo)){
     if (Number.isFinite(fa) && approxEqual(fa, Ltwo)){
       return {type:"continuous", Lleft, Lright, Ltwo, fa};
@@ -599,9 +581,6 @@ function analyzeAtPoint(at){
   if (Number.isFinite(Lleft) && Number.isFinite(Lright) && !approxEqual(Lleft,Lright)){
     return {type:"jump", Lleft, Lright, Ltwo, fa};
   }
-  if (infiniteLeft || infiniteRight || !Number.isFinite(fa)){
-    return {type:"infinite", Lleft, Lright, Ltwo, fa};
-  }
   return {type:"undetermined", Lleft, Lright, Ltwo, fa};
 }
 
@@ -609,10 +588,7 @@ function analyzeAtPoint(at){
 function scanDiscontinuities(){
   const {xMin,xMax} = getWindow();
   const N = 600;
-  const xs = [];
-  for(let i=0;i<=N;i++){
-    xs.push(xMin + i*(xMax-xMin)/N);
-  }
+  const xs = []; for(let i=0;i<=N;i++) xs.push(xMin + i*(xMax-xMin)/N);
   const ys = xs.map(x=>f(x));
 
   const flags = [];
@@ -626,7 +602,6 @@ function scanDiscontinuities(){
       flags.push(xMid);
     }
   }
-  // dedupe close points
   const dedup = [];
   flags.sort((a,b)=>a-b).forEach(x=>{
     if (dedup.length===0 || Math.abs(x - dedup[dedup.length-1]) > (xMax-xMin)/80){
@@ -636,49 +611,52 @@ function scanDiscontinuities(){
   return dedup.slice(0,12);
 }
 
-/* panel updater */
-function updateContinuityPanel(){
-  const r = analyzeAtPoint(a);
+/* panel and badge */
+function updateGraphBadge(r){
+  const b = $("#graphBadge");
+  const txt =
+    r.type==="continuous" ? "Continuous at a" :
+    r.type==="removable"  ? "Removable discontinuity at a" :
+    r.type==="jump"       ? "Jump discontinuity at a" :
+    r.type==="infinite"   ? "Infinite discontinuity at a" : "Continuity undetermined";
+  b.textContent = txt;
+  b.className = "badge " + (
+    r.type==="continuous" ? "ok floatbadge" :
+    r.type==="removable"  ? "info floatbadge" :
+    r.type==="jump" || r.type==="infinite" ? "warn floatbadge" : "info floatbadge"
+  );
+}
+
+function updateContinuityPanel(r){
   const badge = $("#contBadge");
   const details = $("#contDetails");
-
   const line1 = `x = ${trimZeros(a)}`;
   const line2 = `Left limit ≈ ${fmt(r.Lleft)}  •  Right limit ≈ ${fmt(r.Lright)}  •  Two sided ≈ ${fmt(r.Ltwo)}  •  f(a) = ${fmt(r.fa)}`;
 
   if (r.type === "continuous"){
-    badge.className = "badge ok";
-    badge.textContent = "Continuous at a";
+    badge.className = "badge ok"; badge.textContent = "Continuous at a";
     details.textContent = `${line1}. ${line2}.`;
   } else if (r.type === "removable"){
-    badge.className = "badge info";
-    badge.textContent = "Removable discontinuity at a";
+    badge.className = "badge info"; badge.textContent = "Removable discontinuity at a";
     details.textContent = `${line1}. The limit exists but f(a) is undefined or not equal to the limit. ${line2}.`;
   } else if (r.type === "jump"){
-    badge.className = "badge warn";
-    badge.textContent = "Jump discontinuity at a";
+    badge.className = "badge warn"; badge.textContent = "Jump discontinuity at a";
     details.textContent = `${line1}. Left and right limits differ. ${line2}.`;
   } else if (r.type === "infinite"){
-    badge.className = "badge warn";
-    badge.textContent = "Infinite discontinuity at a";
-    details.textContent = `${line1}. The function blows up or is undefined near a. ${line2}.`;
+    badge.className = "badge warn"; badge.textContent = "Infinite discontinuity at a";
+    details.textContent = `${line1}. Values blow up near a or are undefined. ${line2}.`;
   } else {
-    badge.className = "badge info";
-    badge.textContent = "Continuity undetermined";
+    badge.className = "badge info"; badge.textContent = "Continuity undetermined";
     details.textContent = `${line1}. Could not estimate limits reliably. Try adjusting zoom. ${line2}.`;
   }
 
-  const list = $("#contList");
-  list.innerHTML = "";
+  const list = $("#contList"); list.innerHTML = "";
   const pts = scanDiscontinuities();
   if (pts.length===0){
-    const li = document.createElement("li");
-    li.textContent = "None detected in current view.";
-    list.appendChild(li);
+    const li = document.createElement("li"); li.textContent = "None detected in current view."; list.appendChild(li);
   } else {
     pts.forEach(x=>{
-      const li = document.createElement("li");
-      li.textContent = `Possible discontinuity near x ≈ ${fmt(x)}`;
-      list.appendChild(li);
+      const li = document.createElement("li"); li.textContent = `Possible discontinuity near x ≈ ${fmt(x)}`; list.appendChild(li);
     });
   }
 }
@@ -719,9 +697,7 @@ function setPreset(expr){
   if (expr === "custom"){
     $("#customRow").style.display = "";
     const user = $("#funcInput").value.trim();
-    if (user){
-      fExpr = user; f = parseFunc(user);
-    }
+    if (user){ fExpr = user; f = parseFunc(user); }
     return;
   }
   $("#customRow").style.display = "none";
@@ -736,45 +712,26 @@ $("#preset").addEventListener("change", e=>{
   $("#aInput").value = a;
   resetMotion();
   if ($("#tableWrap").style.display !== "none") rebuildTable();
-  updateContinuityPanel();
 });
-
 $("#funcInput").addEventListener("change", ()=>{
   const user = $("#funcInput").value.trim();
-  if (user){
-    fExpr = user; f = parseFunc(user);
-    resetMotion();
-    if ($("#tableWrap").style.display !== "none") rebuildTable();
-    updateContinuityPanel();
-  }
+  if (user){ fExpr = user; f = parseFunc(user); resetMotion(); if ($("#tableWrap").style.display !== "none") rebuildTable(); }
 });
-
 $("#aInput").addEventListener("change", e=>{
   a = parseFloat(e.target.value) || 0;
   resetMotion();
   if ($("#tableWrap").style.display !== "none") rebuildTable();
-  updateContinuityPanel();
 });
-
 $$("input[name='side']").forEach(r=>{
   r.addEventListener("change", e=>{
     side = e.target.value;
     resetMotion();
     if ($("#tableWrap").style.display !== "none") rebuildTable();
-    updateContinuityPanel();
   });
 });
-
 $("#speed").addEventListener("input", e=>{ speed = parseFloat(e.target.value) });
-$("#zoom").addEventListener("input", e=>{
-  zoom = parseFloat(e.target.value);
-  if ($("#tableWrap").style.display !== "none") rebuildTable();
-  updateContinuityPanel();
-});
-$("#epsilon").addEventListener("input", e=>{
-  epsilon = parseFloat(e.target.value);
-  $("#epsVal").textContent = `ε = ${epsilon.toFixed(2)}`;
-});
+$("#zoom").addEventListener("input", e=>{ zoom = parseFloat(e.target.value); if ($("#tableWrap").style.display !== "none") rebuildTable(); });
+$("#epsilon").addEventListener("input", e=>{ epsilon = parseFloat(e.target.value); $("#epsVal").textContent = `ε = ${epsilon.toFixed(2)}`; });
 
 $("#playBtn").addEventListener("click", ()=> running = true);
 $("#pauseBtn").addEventListener("click", ()=> running = false);
@@ -786,7 +743,7 @@ $("#tableBtn").addEventListener("click", ()=>{
   if (show) rebuildTable();
 });
 $("#helpBtn").addEventListener("click", ()=> showHelp(true));
-$("#rescanBtn").addEventListener("click", updateContinuityPanel);
+$("#rescanBtn").addEventListener("click", ()=>{ /* force re-render to update lists */ render(); });
 canvas.addEventListener("click", ()=> running = !running);
 
 /* ====================== Help Overlay ====================== */
@@ -799,20 +756,11 @@ function showHelp(openByUser=false){
 function hideHelp(){
   $("#overlay").classList.remove("show");
   document.body.style.overflow = "";
-  if ($("#dontShow").checked){
-    localStorage.setItem(OVERLAY_KEY, "1");
-  }
+  if ($("#dontShow").checked){ localStorage.setItem(OVERLAY_KEY, "1"); }
 }
 $("#closeHelp").addEventListener("click", hideHelp);
-$("#startPlay").addEventListener("click", ()=>{
-  hideHelp();
-  running = true;
-});
-window.addEventListener("load", ()=>{
-  if (!localStorage.getItem(OVERLAY_KEY)){
-    showHelp(false);
-  }
-});
+$("#startPlay").addEventListener("click", ()=>{ hideHelp(); running = true; });
+window.addEventListener("load", ()=>{ if (!localStorage.getItem(OVERLAY_KEY)){ showHelp(false); } });
 
 /* ====================== Init & Helpers ====================== */
 function resetMotion(){
@@ -821,7 +769,6 @@ function resetMotion(){
   else if (side==="right"){ xPos = a + range*0.35; dir = 1; }
   else { dir = -1; xPos = a + range*0.35; }
 }
-
 function initialFromPreset(){
   const p = $("#preset").value;
   if (p === "(x^2 - 1)/(x - 1)") a=1;
@@ -830,7 +777,6 @@ function initialFromPreset(){
   $("#aInput").value = a;
   resetMotion();
 }
-
 (function main(){
   setPreset($("#preset").value);
   initialFromPreset();
@@ -840,4 +786,3 @@ function initialFromPreset(){
 </script>
 </body>
 </html>
-
