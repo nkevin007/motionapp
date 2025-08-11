@@ -121,6 +121,23 @@
   .tip{background:#0b132a;border:1px solid #223056;border-radius:12px;padding:12px}
   .help-footer{display:flex; justify-content:space-between; align-items:center; margin-top:12px}
   .checkbox{display:flex; gap:8px; align-items:center; color:var(--muted)}
+
+  /* Continuity panel */
+  .cont-panel{
+    padding:12px;
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:10px;
+    border-top:1px solid #1f2b4a;
+  }
+  .badge{
+    display:inline-block; padding:6px 10px; border-radius:999px;
+    font-size:12px; font-weight:700; letter-spacing:.3px;
+  }
+  .ok{background:#11361f; border:1px solid #2f8f5a; color:#b8ffd9}
+  .warn{background:#3a1717; border:1px solid #7a2e2e; color:#ffd0d0}
+  .info{background:#0f1936; border:1px solid #2f59a8; color:#d6e3ff}
+  .listish{margin:0; padding-left:18px}
 </style>
 </head>
 <body>
@@ -183,8 +200,20 @@
         <div class="stat"><div class="k">a</div><div class="v" id="statA">—</div></div>
         <div class="stat"><div class="k">Estimated limit near a</div><div class="v" id="statL">—</div></div>
       </div>
+
+      <!-- Continuity panel -->
+      <div class="cont-panel">
+        <div id="contBadge" class="badge info">Analyzing continuity…</div>
+        <div id="contDetails" class="muted">Left limit, right limit, two sided, and f(a) will appear here.</div>
+        <div class="muted">Nearby discontinuities in view:</div>
+        <ul id="contList" class="listish muted"></ul>
+        <div class="row">
+          <button id="rescanBtn" class="btn">Rescan window</button>
+        </div>
+      </div>
+
       <div class="toolbar">
-        <div class="muted">Tip: click the graph to play/pause • Use zoom to “microscope” near a</div>
+        <div class="muted">Tip: click the graph to play or pause. Use zoom to microscope near a.</div>
       </div>
     </section>
 
@@ -205,7 +234,7 @@
         <div class="muted">Notes</div>
         <ul class="muted">
           <li>Limits depend on the value as x approaches a, not necessarily the value at a.</li>
-          <li>For jumps, left- and right-hand limits differ, so the two-sided limit doesn’t exist.</li>
+          <li>For jumps, left and right limits differ, so the two sided limit does not exist.</li>
           <li>For a hole, the limit can exist even if f(a) is undefined.</li>
         </ul>
       </div>
@@ -216,7 +245,7 @@
   <div id="overlay" class="overlay">
     <div class="help">
       <h2>How to Play: Approach It! Motion Simulator</h2>
-      <div class="lead">Make a point approach <strong>a</strong> on different functions to “see” limits. Try these steps.</div>
+      <div class="lead">Make a point approach <strong>a</strong> on different functions to see limits. Try these steps.</div>
       <div class="tips">
         <div class="tip">
           <strong>1) Choose a function</strong>
@@ -224,15 +253,15 @@
         </div>
         <div class="tip">
           <strong>2) Set the approach point a</strong>
-          <p>Enter the x-value you want to approach. The dot will move toward this point.</p>
+          <p>Enter the x value you want to approach. The dot will move toward this point.</p>
         </div>
         <div class="tip">
           <strong>3) Pick an approach side</strong>
-          <p>Choose Both, Left, or Right to explore one-sided vs two-sided limits.</p>
+          <p>Choose Both, Left, or Right to explore one sided vs two sided limits.</p>
         </div>
         <div class="tip">
           <strong>4) Press Play</strong>
-          <p>Watch the dot move. Adjust animation speed and use the zoom slider to “microscope” near a.</p>
+          <p>Watch the dot move. Adjust animation speed and use the zoom slider to microscope near a.</p>
         </div>
         <div class="tip">
           <strong>5) Show the table</strong>
@@ -240,7 +269,7 @@
         </div>
         <div class="tip">
           <strong>6) Explore ε bands</strong>
-          <p>Set ε &gt; 0 to show a horizontal band around the estimated limit. Can you keep f(x) within that band by zooming near a?</p>
+          <p>Set ε > 0 to show a horizontal band around the estimated limit. Can you keep f(x) within that band by zooming near a?</p>
         </div>
         <div class="tip">
           <strong>Teacher quick wins</strong>
@@ -252,10 +281,10 @@
         </div>
       </div>
       <div class="help-footer">
-        <label class="checkbox"><input type="checkbox" id="dontShow"> Don’t show this again</label>
+        <label class="checkbox"><input type="checkbox" id="dontShow"> Do not show this again</label>
         <div class="row">
           <button id="closeHelp" class="btn">Close</button>
-          <button id="startPlay" class="btn primary">Start & Play ▶</button>
+          <button id="startPlay" class="btn primary">Start and Play ▶</button>
         </div>
       </div>
     </div>
@@ -302,14 +331,12 @@ const ctx = canvas.getContext("2d");
 
 /* ====================== World/Viewport ====================== */
 function getWindow(){
-  // View window centered near a; zoom controls width (smaller width = more zoom)
-  const baseWidth = 20;         // world units
-  const w = baseWidth * (1 - zoom/110); // shrink with zoom
+  const baseWidth = 20;
+  const w = baseWidth * (1 - zoom/110);
   const width = clamp(w, 0.3, baseWidth);
   const xMin = a - width/2;
   const xMax = a + width/2;
 
-  // Sample f near a to guess y-range
   const samples = [];
   for(let i=0;i<200;i++){
     const x = xMin + i*(xMax-xMin)/199;
@@ -321,7 +348,6 @@ function getWindow(){
     const smin = Math.min(...samples), smax = Math.max(...samples);
     const pad = 0.15*(smax - smin || 1);
     yMin = smin - pad; yMax = smax + pad;
-    // keep reasonable bounds
     yMin = clamp(yMin, -20, 20);
     yMax = clamp(yMax, -20, 20);
     if (yMax - yMin < 1) { yMin -= .5; yMax += .5; }
@@ -347,7 +373,6 @@ function drawGrid(win){
   const {xMin,xMax,yMin,yMax} = win;
   ctx.lineWidth = 1;
 
-  // grid
   ctx.strokeStyle = "#25304a";
   ctx.beginPath();
   const xStep = niceStep((xMax-xMin)/10);
@@ -362,7 +387,6 @@ function drawGrid(win){
   }
   ctx.stroke();
 
-  // axes
   ctx.strokeStyle = "#9fb2ff";
   ctx.beginPath();
   if (yMin<0 && yMax>0){
@@ -375,7 +399,6 @@ function drawGrid(win){
   }
   ctx.stroke();
 
-  // tick labels
   ctx.fillStyle = "#aab6ef";
   ctx.font = "12px Inter, sans-serif";
   ctx.textAlign = "center"; ctx.textBaseline = "top";
@@ -422,7 +445,6 @@ function drawFunction(win){
   }
   ctx.stroke();
 
-  // hole marker if f(a) undefined but limit finite (we'll just show open circle at estimated L)
   const L = estimateLimit(a);
   const fa = f(a);
   if (!Number.isFinite(fa) && Number.isFinite(L)){
@@ -453,7 +475,6 @@ function drawEpsilonBand(win, L){
 }
 
 function drawApproachPoint(win){
-  // vertical marker at a
   const ap = toScreen(a, 0, win);
   ctx.strokeStyle = "#ffd37a";
   ctx.lineWidth = 1.5;
@@ -476,23 +497,19 @@ function drawParticle(win){
 
 /* ====================== Animation & Logic ====================== */
 function step(dt){
-  // move xPos toward a with geometric easing
   const delta = (a - xPos);
-  const base = 0.92 - (speed-1.2)*0.08; // speed affects shrink rate
+  const base = 0.92 - (speed-1.2)*0.08;
   const factor = clamp(base, 0.80, 0.98);
   xPos = a - delta * factor;
 
-  // if both sides, bounce across a each time we get very close
   if (side === "both"){
     if (Math.abs(xPos - a) < 1e-4){
-      // flip start side
       const offset = (getWindow().xMax - getWindow().xMin)*0.35;
       dir *= -1;
       xPos = a + dir*offset;
     }
   }
 
-  // one-sided starts reset if we get too close
   if (side === "left" || side === "right"){
     if (Math.abs(xPos - a) < 1e-4){
       const offset = (getWindow().xMax - getWindow().xMin)*0.35;
@@ -512,12 +529,13 @@ function render(){
   drawEpsilonBand(win, L);
   drawParticle(win);
 
-  // stats
   $("#statA").textContent = trimZeros(a);
   const y = f(xPos);
   $("#statX").textContent = fmt(xPos);
   $("#statY").textContent = fmt(y);
   $("#statL").textContent = Number.isFinite(L)? fmt(L) : "—";
+
+  updateContinuityPanel(); // new
 }
 
 function loop(ts){
@@ -528,29 +546,141 @@ function loop(ts){
   requestAnimationFrame(loop);
 }
 
-/* ====================== Limit Estimation ====================== */
-function estimateLimit(at){
-  // average of nearby left/right medians
-  const dx0 = (getWindow().xMax - getWindow().xMin)*0.001;
-  const xsLeft = [], xsRight = [];
-  for(let i=6;i<=50;i++){
-    xsLeft.push(at - dx0*i);
-    xsRight.push(at + dx0*i);
-  }
-  const lvals = xsLeft.map(x=>f(x)).filter(Number.isFinite);
-  const rvals = xsRight.map(x=>f(x)).filter(Number.isFinite);
-  if (!lvals.length || !rvals.length) return NaN;
-  const lMed = median(lvals), rMed = median(rvals);
-  if (!Number.isFinite(lMed) || !Number.isFinite(rMed)) return NaN;
-  // if they disagree wildly, show NaN (jump/asymptote)
-  if (Math.abs(lMed - rMed) > 1e3 || (Math.abs(lMed - rMed) > Math.max(1,Math.abs(lMed),Math.abs(rMed))*0.25))
-    return (side==="left")? lMed : (side==="right"? rMed : NaN);
-  return (lMed + rMed)/2;
-}
+/* ====================== Limit and Continuity ====================== */
 function median(arr){
   const a=[...arr].sort((a,b)=>a-b);
   const n=a.length; if (!n) return NaN;
   return n%2? a[(n-1)/2] : (a[n/2-1]+a[n/2])/2;
+}
+
+function approxEqual(u,v){
+  if (!Number.isFinite(u) || !Number.isFinite(v)) return false;
+  const abs = Math.abs(u-v);
+  const rel = abs / Math.max(1, Math.abs(u), Math.abs(v));
+  return abs < 1e-4 || rel < 1e-3;
+}
+
+function oneSidedMedian(at, dirSign){
+  const dx0 = (getWindow().xMax - getWindow().xMin)*0.001;
+  const xs = [];
+  for(let i=6;i<=60;i++){
+    xs.push(at + dirSign*dx0*i);
+  }
+  const vals = xs.map(x=>f(x)).filter(Number.isFinite);
+  if (!vals.length) return NaN;
+  return median(vals);
+}
+
+function estimateLimit(at){
+  const lMed = oneSidedMedian(at, -1);
+  const rMed = oneSidedMedian(at, +1);
+  if (!Number.isFinite(lMed) || !Number.isFinite(rMed)) return NaN;
+  if (!approxEqual(lMed, rMed)) return NaN;
+  return (lMed + rMed)/2;
+}
+
+function analyzeAtPoint(at){
+  const Lleft = oneSidedMedian(at, -1);
+  const Lright = oneSidedMedian(at, +1);
+  const Ltwo = (Number.isFinite(Lleft) && Number.isFinite(Lright) && approxEqual(Lleft, Lright)) ? (Lleft+Lright)/2 : NaN;
+  const fa = f(at);
+
+  // Infinite discontinuity: one of the one sided medians is not finite while nearby values blow up
+  const infiniteLeft = !Number.isFinite(Lleft);
+  const infiniteRight = !Number.isFinite(Lright);
+
+  if (Number.isFinite(Ltwo)){
+    if (Number.isFinite(fa) && approxEqual(fa, Ltwo)){
+      return {type:"continuous", Lleft, Lright, Ltwo, fa};
+    } else {
+      return {type:"removable", Lleft, Lright, Ltwo, fa};
+    }
+  }
+  if (Number.isFinite(Lleft) && Number.isFinite(Lright) && !approxEqual(Lleft,Lright)){
+    return {type:"jump", Lleft, Lright, Ltwo, fa};
+  }
+  if (infiniteLeft || infiniteRight || !Number.isFinite(fa)){
+    return {type:"infinite", Lleft, Lright, Ltwo, fa};
+  }
+  return {type:"undetermined", Lleft, Lright, Ltwo, fa};
+}
+
+/* scan visible window for discontinuities */
+function scanDiscontinuities(){
+  const {xMin,xMax} = getWindow();
+  const N = 600;
+  const xs = [];
+  for(let i=0;i<=N;i++){
+    xs.push(xMin + i*(xMax-xMin)/N);
+  }
+  const ys = xs.map(x=>f(x));
+
+  const flags = [];
+  for(let i=1;i<=N;i++){
+    const y1 = ys[i-1], y2 = ys[i];
+    const x1 = xs[i-1], x2 = xs[i];
+    const eitherNaN = !Number.isFinite(y1) || !Number.isFinite(y2);
+    const bigJump = Number.isFinite(y1) && Number.isFinite(y2) && Math.abs(y2 - y1) > Math.max(5, Math.abs(y1), Math.abs(y2))*0.5;
+    if (eitherNaN || bigJump){
+      const xMid = (x1 + x2)/2;
+      flags.push(xMid);
+    }
+  }
+  // dedupe close points
+  const dedup = [];
+  flags.sort((a,b)=>a-b).forEach(x=>{
+    if (dedup.length===0 || Math.abs(x - dedup[dedup.length-1]) > (xMax-xMin)/80){
+      dedup.push(x);
+    }
+  });
+  return dedup.slice(0,12);
+}
+
+/* panel updater */
+function updateContinuityPanel(){
+  const r = analyzeAtPoint(a);
+  const badge = $("#contBadge");
+  const details = $("#contDetails");
+
+  const line1 = `x = ${trimZeros(a)}`;
+  const line2 = `Left limit ≈ ${fmt(r.Lleft)}  •  Right limit ≈ ${fmt(r.Lright)}  •  Two sided ≈ ${fmt(r.Ltwo)}  •  f(a) = ${fmt(r.fa)}`;
+
+  if (r.type === "continuous"){
+    badge.className = "badge ok";
+    badge.textContent = "Continuous at a";
+    details.textContent = `${line1}. ${line2}.`;
+  } else if (r.type === "removable"){
+    badge.className = "badge info";
+    badge.textContent = "Removable discontinuity at a";
+    details.textContent = `${line1}. The limit exists but f(a) is undefined or not equal to the limit. ${line2}.`;
+  } else if (r.type === "jump"){
+    badge.className = "badge warn";
+    badge.textContent = "Jump discontinuity at a";
+    details.textContent = `${line1}. Left and right limits differ. ${line2}.`;
+  } else if (r.type === "infinite"){
+    badge.className = "badge warn";
+    badge.textContent = "Infinite discontinuity at a";
+    details.textContent = `${line1}. The function blows up or is undefined near a. ${line2}.`;
+  } else {
+    badge.className = "badge info";
+    badge.textContent = "Continuity undetermined";
+    details.textContent = `${line1}. Could not estimate limits reliably. Try adjusting zoom. ${line2}.`;
+  }
+
+  const list = $("#contList");
+  list.innerHTML = "";
+  const pts = scanDiscontinuities();
+  if (pts.length===0){
+    const li = document.createElement("li");
+    li.textContent = "None detected in current view.";
+    list.appendChild(li);
+  } else {
+    pts.forEach(x=>{
+      const li = document.createElement("li");
+      li.textContent = `Possible discontinuity near x ≈ ${fmt(x)}`;
+      list.appendChild(li);
+    });
+  }
 }
 
 /* ====================== Table ====================== */
@@ -606,6 +736,7 @@ $("#preset").addEventListener("change", e=>{
   $("#aInput").value = a;
   resetMotion();
   if ($("#tableWrap").style.display !== "none") rebuildTable();
+  updateContinuityPanel();
 });
 
 $("#funcInput").addEventListener("change", ()=>{
@@ -614,6 +745,7 @@ $("#funcInput").addEventListener("change", ()=>{
     fExpr = user; f = parseFunc(user);
     resetMotion();
     if ($("#tableWrap").style.display !== "none") rebuildTable();
+    updateContinuityPanel();
   }
 });
 
@@ -621,6 +753,7 @@ $("#aInput").addEventListener("change", e=>{
   a = parseFloat(e.target.value) || 0;
   resetMotion();
   if ($("#tableWrap").style.display !== "none") rebuildTable();
+  updateContinuityPanel();
 });
 
 $$("input[name='side']").forEach(r=>{
@@ -628,6 +761,7 @@ $$("input[name='side']").forEach(r=>{
     side = e.target.value;
     resetMotion();
     if ($("#tableWrap").style.display !== "none") rebuildTable();
+    updateContinuityPanel();
   });
 });
 
@@ -635,6 +769,7 @@ $("#speed").addEventListener("input", e=>{ speed = parseFloat(e.target.value) })
 $("#zoom").addEventListener("input", e=>{
   zoom = parseFloat(e.target.value);
   if ($("#tableWrap").style.display !== "none") rebuildTable();
+  updateContinuityPanel();
 });
 $("#epsilon").addEventListener("input", e=>{
   epsilon = parseFloat(e.target.value);
@@ -651,6 +786,7 @@ $("#tableBtn").addEventListener("click", ()=>{
   if (show) rebuildTable();
 });
 $("#helpBtn").addEventListener("click", ()=> showHelp(true));
+$("#rescanBtn").addEventListener("click", updateContinuityPanel);
 canvas.addEventListener("click", ()=> running = !running);
 
 /* ====================== Help Overlay ====================== */
@@ -658,7 +794,6 @@ const OVERLAY_KEY = "approachIt_help_hidden";
 function showHelp(openByUser=false){
   $("#overlay").classList.add("show");
   document.body.style.overflow = "hidden";
-  // If user opened Help explicitly, uncheck "Don't show again" so they can choose again
   if (openByUser) $("#dontShow").checked = false;
 }
 function hideHelp(){
@@ -705,3 +840,4 @@ function initialFromPreset(){
 </script>
 </body>
 </html>
+
